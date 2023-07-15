@@ -55,6 +55,7 @@ const TUPLE_OLD_TAG: u8 = b'O';
 const TUPLE_DATA_NULL_TAG: u8 = b'n';
 const TUPLE_DATA_TOAST_TAG: u8 = b'u';
 const TUPLE_DATA_TEXT_TAG: u8 = b't';
+const TUPLE_DATA_BINARY_TAG: u8 = b'b';
 
 // replica identity tags
 const REPLICA_IDENTITY_DEFAULT_TAG: u8 = b'd';
@@ -1238,6 +1239,8 @@ pub enum TupleData {
     UnchangedToast,
     /// Column data as text formatted value.
     Text(Bytes),
+    /// Column data as binary formatted value.
+    Binary(Bytes),
 }
 
 impl TupleData {
@@ -1252,6 +1255,12 @@ impl TupleData {
                 let mut data = vec![0; len as usize];
                 buf.read_exact(&mut data)?;
                 TupleData::Text(data.into())
+            }
+            TUPLE_DATA_BINARY_TAG => {
+                let len = buf.read_i32::<BigEndian>()?;
+                let mut data = vec![0; len as usize];
+                buf.read_exact(&mut data)?;
+                TupleData::Binary(data.into())
             }
             tag => {
                 return Err(io::Error::new(
